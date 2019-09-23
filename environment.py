@@ -4,7 +4,7 @@ import numpy as np
 class UnoEnvironment:
 
     # generate all possible cards as tuples with the structure (colour:int, type:int)
-    CARD_TYPES = np.array([[colour, type] for colour in range(4) for type in range(12)])
+    CARD_TYPES = np.array([[colour, type] for colour in range(4) for type in range(13)])
 
     def __init__(self, player_count):
         self.player_count = player_count
@@ -52,6 +52,9 @@ class UnoEnvironment:
                 elif card[1] == 11:
                     # 2+ card played
                     self.to_draw += 2
+                elif card[1] == 12:
+                    # skip turn card played
+                    self.next_turn()
 
                 if player.num_cards() == 0:
                     reward += 50
@@ -62,7 +65,7 @@ class UnoEnvironment:
                 self.remove_player(player)
 
         # advance to the next turn
-        self.finish_turn()
+        self.next_turn()
 
         # generate state vector (current top card, own cards, amount to draw)
         states = [np.all(self.CARD_TYPES == self.top_card, axis=1).astype(np.float),
@@ -75,7 +78,7 @@ class UnoEnvironment:
 
         return state, reward, done
 
-    def finish_turn(self):
+    def next_turn(self):
         # advance to the next turn
         self.turn += self.turn_direction
 
