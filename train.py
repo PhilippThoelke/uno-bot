@@ -7,7 +7,7 @@ from environment import UnoEnvironment
 PLAYER_COUNT = 4
 COLLECTOR_THREADS = 2
 REPORT_FREQUENCY = 1000
-EPSILON_DECAY = 0.999995
+EPSILON_DECAY = 0.999999
 MIN_EPSILON = 0.01
 
 def run(agent):
@@ -58,12 +58,14 @@ def run(agent):
             metrics = {'cumulative_reward': [], 'mean_reward': [], 'episode_length': [], 'epsilon': []}
 
 if __name__ == '__main__':
+    # initialize the training agent
     dummy_env = UnoEnvironment(1)
     agent = UnoAgent(dummy_env.state_size(), dummy_env.action_count())
     del dummy_env
 
+    # start up threads for experience collection
     for _ in range(COLLECTOR_THREADS):
         threading.Thread(target=run, args=(agent,), daemon=True).start()
 
+    # blocking call to agent, invoking an endless training loop
     agent.train()
-    
