@@ -104,6 +104,9 @@ class UnoEnvironment:
     def action_count(self):
         return len(self.CARD_TYPES) + 1
 
+    def players_left(self):
+        return len(self.players)
+
 
 class UnoPlayer:
 
