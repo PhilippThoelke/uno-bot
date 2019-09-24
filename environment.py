@@ -88,9 +88,17 @@ class UnoEnvironment:
         elif self.turn >= len(self.players):
             self.turn = 0
 
-    def legal_move(self, card_index):
+    def legal_move(self, action):
+        # drawing a card is always legal
+        if action == len(self.CARD_TYPES):
+            return True
+
+        # illegal move if the current player does not have the selected card
+        if self.players[self.turn].cards[action] == 0:
+            return False
+
         # check if the last and current card's colour or type are the same
-        card = self.CARD_TYPES[card_index]
+        card = self.CARD_TYPES[action]
         return self.top_card[0] == card[0] or self.top_card[1] == card[1]
 
     def remove_player(self, player):
@@ -123,8 +131,8 @@ class UnoPlayer:
             self.cards[np.random.randint(len(self.game.CARD_TYPES))] += 1
 
     def play_card(self, card_index):
-        # check if the selected card exists in the player's hand and this move is legal
-        if self.cards[card_index] == 0 or not self.game.legal_move(card_index):
+        # check if this move is legal
+        if not self.game.legal_move(card_index):
             return False
 
         # play the selected card
