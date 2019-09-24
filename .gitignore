@@ -105,3 +105,6 @@ venv.bak/
 
 # log files
 logs/
+
+# saved models
+models/
