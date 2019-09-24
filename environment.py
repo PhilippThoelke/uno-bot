@@ -43,7 +43,7 @@ class UnoEnvironment:
 
             if card is not False:
                 # legal move played
-                reward += 1
+                reward += 2
                 self.top_card = card
 
                 if card[1] == 10:
@@ -55,28 +55,27 @@ class UnoEnvironment:
                 elif card[1] == 12:
                     # skip turn card played
                     self.next_turn()
-
                 if player.num_cards() == 0:
-                    reward += 50
+                    reward += 10
                     self.remove_player(player)
             else:
                 # illegal move, eliminate player
-                reward -= 10
+                reward -= 1
                 self.remove_player(player)
 
         # advance to the next turn
         self.next_turn()
-
-        # generate state vector (current top card, own cards, amount to draw)
-        states = [np.all(self.CARD_TYPES == self.top_card, axis=1).astype(np.float),
-                  player.cards,
-                  [self.to_draw]]
-        state = np.concatenate(states)
-
         # check if the end of the episode was reached (only one player left)
         done = len(self.players) <= 1
 
-        return state, reward, done
+        return self.get_state(), reward, done
+
+    def get_state(self):
+        # generate state vector (current top card, own cards, amount to draw)
+        states = [np.all(self.CARD_TYPES == self.top_card, axis=1).astype(np.float),
+                  self.players[self.turn].cards,
+                  [self.to_draw]]
+        return np.concatenate(states)
 
     def next_turn(self):
         # advance to the next turn
@@ -118,7 +117,7 @@ class UnoEnvironment:
 
 class UnoPlayer:
 
-    def __init__(self, game, num_cards=7):
+    def __init__(self, game, num_cards=4):
         self.game = game
 
         # randomly initialize the player's hand
