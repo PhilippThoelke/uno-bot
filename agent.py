@@ -2,6 +2,7 @@ import random
 import collections
 import numpy as np
 import tensorflow as tf
+from tensorboard import TensorflowLogger
 from keras import models, layers, optimizers
 
 class UnoAgent:
@@ -12,7 +13,9 @@ class UnoAgent:
     MODEL_UPDATE_FREQUENCY = 20
 
     def __init__(self, state_size, action_count):
+        print('Initializing agent...')
         self.initialized = False
+        self.logger = TensorflowLogger('logs')
 
         # initialize the prediction model and a clone of it, the target model
         self.model = self.create_model(state_size, action_count)
@@ -70,13 +73,16 @@ class UnoAgent:
                     q_values[i,action] += self.DISCOUNT_FACTOR * max_future_q[i]
 
             # train the model on the minibatch
-            self.target_model.fit(x=states, y=q_values, batch_size=self.BATCH_SIZE, verbose=0)
+            hist = self.target_model.fit(x=states, y=q_values, batch_size=self.BATCH_SIZE, verbose=0)
+            self.logger.scalar('loss', hist.history['loss'][0])
+            self.logger.scalar('acc', hist.history['acc'][0])
+            self.logger.flush()
 
             counter += 1
             if counter == self.MODEL_UPDATE_FREQUENCY:
                 # update the prediction model
                 self.model.set_weights(self.target_model.get_weights())
                 if not self.initialized:
-                    print('Model initialized')
+                    print('Agent initialized')
                     self.initialized = True
                 counter = 0
