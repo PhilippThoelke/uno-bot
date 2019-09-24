@@ -6,7 +6,7 @@ from environment import UnoEnvironment
 
 PLAYER_COUNT = 4
 COLLECTOR_THREADS = 2
-EPSILON_DECAY = 0.999999
+EPSILON_DECAY = 0.999995
 MIN_EPSILON = 0.01
 
 def run(agent):
@@ -47,7 +47,6 @@ def run(agent):
         agent.logger.scalar('mean_reward', np.mean(rewards))
         agent.logger.scalar('game_length', len(rewards))
         agent.logger.scalar('epsilon', epsilon)
-        agent.logger.scalar('players_left', env.players_left())
 
         # reset the environment for the next episode
         env.reset()
