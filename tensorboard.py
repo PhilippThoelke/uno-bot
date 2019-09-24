@@ -1,12 +1,11 @@
-import os
 import tensorflow as tf
 from datetime import datetime
 
 class TensorflowLogger:
     def __init__(self, log_dir):
         # initialize the logger
-        summary_name = datetime.now().strftime('summary_%d-%m-%y_%H-%M-%S')
-        self.writer = tf.summary.FileWriter(os.path.join(log_dir, summary_name))
+        self.timestamp = datetime.now().strftime('%d-%m-%y_%H-%M-%S')
+        self.writer = tf.summary.FileWriter(log_dir + '/summary_' + self.timestamp)
         self.variable_steps = {}
 
     def scalar(self, name, value, step=None):
