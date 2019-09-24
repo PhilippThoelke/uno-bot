@@ -1,3 +1,4 @@
+import os
 import random
 import collections
 import numpy as np
@@ -11,6 +12,7 @@ class UnoAgent:
     BATCH_SIZE = 512
     DISCOUNT_FACTOR = 0.7
     MODEL_UPDATE_FREQUENCY = 20
+    MODEL_SAVE_FREQUENCY = 1000
 
     def __init__(self, state_size, action_count):
         print('Initializing agent...')
@@ -29,7 +31,6 @@ class UnoAgent:
         # define the model architecture
         model = models.Sequential()
         model.add(layers.Dense(units=64, activation='relu', input_shape=(input_size,)))
-        model.add(layers.Dense(units=64, activation='relu'))
         model.add(layers.Dense(units=64, activation='relu'))
         model.add(layers.Dense(units=64, activation='relu'))
         model.add(layers.Dense(units=output_size, activation='linear'))
@@ -79,10 +80,17 @@ class UnoAgent:
             self.logger.flush()
 
             counter += 1
-            if counter == self.MODEL_UPDATE_FREQUENCY:
-                # update the prediction model
+            if counter % self.MODEL_UPDATE_FREQUENCY == 0:
+                # update the predictor model
                 self.model.set_weights(self.target_model.get_weights())
                 if not self.initialized:
                     print('Agent initialized')
                     self.initialized = True
-                counter = 0
+
+            if counter % self.MODEL_SAVE_FREQUENCY == 0:
+                # create model folder
+                folder = f'models/{self.logger.timestamp}'
+                if not os.path.exists(folder):
+                    os.makedirs(folder)
+                # save model
+                self.model.save(f'{folder}/model-{counter}.h5')
