@@ -1,91 +1,23 @@
 import sys
-import time
 import pygame
 import numpy as np
 from keras.models import load_model
 from environment import UnoEnvironment
+from renderer import draw_card, draw_player, draw_env
 
-MODEL_PATH = 'models/25-09-19_00-57-11/model-8000.h5'
+MODEL_PATH = 'models/25-09-19_00-57-11/model-91000.h5'
 
-CARD_COLOURS = [(255, 0, 0), (0, 255, 0), (0, 150, 255), (255, 255, 0)]
-CARD_WIDTH = 40
-CARD_HEIGHT = 65
 FONT = 'arial'
 FONT_SIZE = 25
 
 BACKGROUND = (180, 180, 180)
-X_MARGIN = 5
-Y_MARGIN = 10
-
 POSSIBLE_PLAYER_TYPES = ['AI', 'Human', 'Safe']
-
-def draw_card(pos, card, surface, font):
-    # get card colour and type
-    if hasattr(card, '__iter__'):
-        colour, card_type = card
-    else:
-        colour, card_type = UnoEnvironment.CARD_TYPES[card]
-
-    # get string for the card text
-    if card_type < 10:
-        # regular number
-        card_text = str(card_type)
-    elif card_type == 10:
-        # change direction
-        card_text = '<-'
-    elif card_type == 11:
-        # draw two cards
-        card_text = '2+'
-    elif card_type == 12:
-        # skip turn
-        card_text = 'X'
-
-    # draw card rectangle
-    bounds = (pos[0] - CARD_WIDTH // 2, pos[1] - CARD_HEIGHT // 2, CARD_WIDTH, CARD_HEIGHT)
-    surface.fill(CARD_COLOURS[colour], bounds)
-
-    # draw card text
-    text = font.render(card_text, True, (0, 0, 0))
-    text_rect = text.get_rect()
-    text_rect.center = pos
-    surface.blit(text, text_rect)
-
-def draw_player(cards, has_turn, offset, surface, font):
-    if has_turn:
-        x = offset[0] - CARD_WIDTH / 2 - X_MARGIN
-        y = offset[1] - (CARD_HEIGHT + Y_MARGIN) / 2
-        width = np.sum(cards) * (CARD_WIDTH + X_MARGIN) + X_MARGIN
-        height = CARD_HEIGHT + Y_MARGIN
-        surface.fill((255, 255, 255), (x, y, width, height))
-
-    player_rects = []
-    x, y = offset
-    for card_index in np.argwhere(cards > 0)[:,0]:
-        draw_card((x, y), card_index, surface, font)
-        player_rects.append(pygame.rect.Rect((x - CARD_WIDTH / 2, y - CARD_HEIGHT / 2, CARD_WIDTH, CARD_HEIGHT)))
-        x += CARD_WIDTH + X_MARGIN
-    return player_rects
-
-def draw_env(env, surface, font):
-    # draw top card
-    pos = (CARD_WIDTH / 2 + X_MARGIN, surface.get_bounding_rect().center[1])
-    draw_card(pos, env.top_card, surface, font)
-
-    card_rects = None
-    # draw players' cards
-    for i, player in enumerate(env.players):
-        offset = (20 + CARD_WIDTH * 1.5, X_MARGIN + i * (CARD_HEIGHT + Y_MARGIN) + CARD_HEIGHT / 2)
-        rects = draw_player(player.cards, i == env.turn, offset, surface, font)
-
-        if i == env.turn:
-            # current player has the turn
-            card_rects = rects
-    return card_rects
 
 # check command line arguments
 if len(sys.argv) < 3:
     print(f'Not enough players specified ({len(sys.argv) - 1}).', end='')
-    print(f'Select player types with command line attributes. (options: {POSSIBLE_PLAYER_TYPES})')
+    player_options_str = ', '.join(POSSIBLE_PLAYER_TYPES)
+    print(f'Select player types with command line attributes. (options: {player_options_str})')
     exit()
 
 # extract player types (0 for AI, 1 for human)
@@ -101,7 +33,8 @@ for player in sys.argv[1:]:
 
     if not found:
         # unknown player type found
-        print(f'Unknown player type "{player}". Please select from {POSSIBLE_PLAYER_TYPES}.')
+        player_options_str = ', '.join(POSSIBLE_PLAYER_TYPES)
+        print(f'Unknown player type "{player}". Please select from {player_options_str}.')
         exit()
 
 # initialize pygame
@@ -133,7 +66,6 @@ mouse_down = False
 clicked = False
 done = False
 game_finished = False
-last_move = time.time()
 
 print('Done! Running game loop...')
 while not done:
@@ -149,7 +81,6 @@ while not done:
         elif event.type == pygame.MOUSEBUTTONDOWN:
             if event.button == 1:
                 mouse_down = False
-
 
     if not game_finished:
         # reset screen
@@ -179,7 +110,11 @@ while not done:
                 action += 1
 
         # play the selected action
-        game_finished = env.step(action)[-1]
+        _, _, game_finished, player_eliminated = env.step(action)
+
+        # check if the current player is out of the game
+        if player_eliminated:
+            del player_types[env.turn]
 
         # update game screen once after game has finished
         if game_finished:
