@@ -27,6 +27,7 @@ class UnoEnvironment:
 
         # retrieve current player instance
         player = self.players[self.turn]
+        eliminated = False
 
         if self.top_card[1] == 11 and action < len(self.CARD_TYPES) and self.CARD_TYPES[action][1] != 11:
             # player has to draw cards due to 2+ card (player is not countering)
@@ -55,20 +56,24 @@ class UnoEnvironment:
                 elif card[1] == 12:
                     # skip turn card played
                     self.next_turn()
+
                 if player.num_cards() == 0:
+                    # player has no cards left -> win
                     reward += 10
                     self.remove_player(player)
+                    eliminated = True
             else:
                 # illegal move, eliminate player
                 reward -= 1
                 self.remove_player(player)
+                eliminated = True
 
         # advance to the next turn
         self.next_turn()
         # check if the end of the episode was reached (only one player left)
         done = len(self.players) <= 1
 
-        return self.get_state(), reward, done
+        return self.get_state(), reward, done, eliminated
 
     def get_state(self):
         # generate state vector (current top card, own cards, amount to draw)

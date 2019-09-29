@@ -29,7 +29,7 @@ def run(agent):
                 # choose an action from the policy
                 action = agent.predict(state)
 
-            new_state, reward, done = env.step(action)
+            new_state, reward, done, _ = env.step(action)
             rewards.append(reward)
 
             if state is not None:
