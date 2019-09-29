@@ -28,45 +28,56 @@ class UnoEnvironment:
         # retrieve current player instance
         player = self.players[self.turn]
         eliminated = False
+        move_finished = False
 
-        if self.top_card[1] == 11 and action < len(self.CARD_TYPES) and self.CARD_TYPES[action][1] != 11:
-            # player has to draw cards due to 2+ card (player is not countering)
-            player.draw_cards(self.to_draw)
-            self.to_draw = 0
-
-        if action == len(self.CARD_TYPES):
-            # draw card action
-            player.draw_cards(1)
-            reward -= 1
-        else:
-            # try to play the selected card
-            card = player.play_card(action)
-
-            if card is not False:
-                # legal move played
-                reward += 2
-                self.top_card = card
-
-                if card[1] == 10:
-                    # reverse direction card played
-                    self.turn_direction *= -1
-                elif card[1] == 11:
-                    # 2+ card played
-                    self.to_draw += 2
-                elif card[1] == 12:
-                    # skip turn card played
-                    self.next_turn()
-
-                if player.num_cards() == 0:
-                    # player has no cards left -> win
-                    reward += 10
-                    self.remove_player(player)
-                    eliminated = True
-            else:
-                # illegal move, eliminate player
+        if self.top_card[1] == 11 and self.to_draw > 0:
+            if action == len(self.CARD_TYPES):
+                # player has to draw cards due to 2+ card (player is not countering)
+                player.draw_cards(self.to_draw)
+                self.to_draw = 0
+                move_finished = True
+            elif self.CARD_TYPES[action][1] != 11:
+                # player has to draw cards, is not playing another 2+ and did not select draw from stack -> illegal move, eliminate player
                 reward -= 1
                 self.remove_player(player)
                 eliminated = True
+                move_finished = True
+
+        if not move_finished:
+            if action == len(self.CARD_TYPES):
+                # draw card action
+                player.draw_cards(1)
+                reward -= 1
+            else:
+                # try to play the selected card
+                card = player.play_card(action)
+
+                if card is not False:
+                    # legal move played
+                    reward += 2
+                    self.top_card = card
+
+                    if card[1] == 10:
+                        # reverse direction card played
+                        self.turn_direction *= -1
+                    elif card[1] == 11:
+                        # 2+ card played
+                        self.to_draw += 2
+                    elif card[1] == 12:
+                        # skip turn card played
+                        self.next_turn()
+                else:
+                    # illegal move, eliminate player
+                    reward -= 1
+                    self.remove_player(player)
+                    eliminated = True
+            move_finished = True
+
+        if player.num_cards() == 0:
+            # player has no cards left -> win
+            reward += 10
+            self.remove_player(player)
+            eliminated = True
 
         # advance to the next turn
         self.next_turn()
@@ -101,8 +112,12 @@ class UnoEnvironment:
         if self.players[self.turn].cards[action] == 0:
             return False
 
-        # check if the last and current card's colour or type are the same
         card = self.CARD_TYPES[action]
+        # check if player has to draw cards but wants to play another card
+        if self.top_card[1] == 11 and self.to_draw > 0 and card[1] != 11:
+            return False
+
+        # return true if the last and current card's colour or type are equal
         return self.top_card[0] == card[0] or self.top_card[1] == card[1]
 
     def remove_player(self, player):
@@ -122,7 +137,7 @@ class UnoEnvironment:
 
 class UnoPlayer:
 
-    def __init__(self, game, num_cards=4):
+    def __init__(self, game, num_cards=7):
         self.game = game
 
         # randomly initialize the player's hand
