@@ -99,7 +99,9 @@ while not done:
                 mouse_pos = pygame.mouse.get_pos()
                 index = np.argwhere([rect.contains(mouse_pos + (0, 0)) for rect in card_rects])
                 if len(index) > 0:
-                    action = np.argwhere(env.players[env.turn].cards > 0)[index[0,0],0]
+                    cards = [[index] * int(count) for index, count in enumerate(env.players[env.turn].cards) if count > 0]
+                    cards = np.concatenate(cards)
+                    action = cards[index[0,0]]
                     if env.legal_move(action):
                         card_selected = True
             if not card_selected:
