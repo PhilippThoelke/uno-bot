@@ -2,7 +2,11 @@ import pygame
 import numpy as np
 from environment import UnoEnvironment
 
-CARD_COLOURS = [(255, 0, 0), (0, 255, 0), (0, 150, 255), (255, 255, 0)]
+CARD_COLOURS = [(255, 0, 0), # red
+                (0, 255, 0), # green
+                (0, 150, 255), # blue
+                (255, 255, 0), # yellow
+                (75, 75, 75)] # stack colour
 CARD_WIDTH = 40
 CARD_HEIGHT = 65
 X_MARGIN = 5
@@ -11,13 +15,18 @@ Y_MARGIN = 10
 
 def draw_card(pos, card, surface, font):
     # get card colour and type
-    if hasattr(card, '__iter__'):
+    if type(card) == str:
+        colour, card_type = 4, -1
+    elif hasattr(card, '__iter__'):
         colour, card_type = card
     else:
         colour, card_type = UnoEnvironment.CARD_TYPES[card]
 
     # get string for the card text
-    if card_type < 10:
+    if card_type == -1:
+        # stack
+        card_text = '+'
+    elif card_type < 10:
         # regular number
         card_text = str(card_type)
     elif card_type == 10:
@@ -65,9 +74,14 @@ def draw_player(cards, has_turn, offset, surface, font):
     return player_rects
 
 def draw_env(env, surface, font):
+    x = CARD_WIDTH / 2 + X_MARGIN
     # draw top card
-    pos = (CARD_WIDTH / 2 + X_MARGIN, surface.get_bounding_rect().center[1])
-    draw_card(pos, env.top_card, surface, font)
+    y = surface.get_bounding_rect().center[1] - (CARD_HEIGHT + Y_MARGIN) / 2
+    draw_card((x, y), env.top_card, surface, font)
+    # draw card stack
+    y = surface.get_bounding_rect().center[1] + (CARD_HEIGHT + Y_MARGIN) / 2
+    draw_card((x, y), 'stack', surface, font)
+    stack_rect = pygame.rect.Rect((x - CARD_WIDTH / 2, y - CARD_HEIGHT / 2, CARD_WIDTH, CARD_HEIGHT))
 
     card_rects = None
     # draw players' cards
@@ -78,4 +92,6 @@ def draw_env(env, surface, font):
         if i == env.turn:
             # current player has the turn
             card_rects = rects
+
+    card_rects.append(stack_rect)
     return card_rects

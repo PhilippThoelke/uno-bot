@@ -10,6 +10,7 @@ MODEL_PATH = 'models/25-09-19_00-57-11/model-91000.h5'
 FONT = 'arial'
 FONT_SIZE = 25
 
+WINDOW_SIZE = (800, 600)
 BACKGROUND = (180, 180, 180)
 POSSIBLE_PLAYER_TYPES = ['AI', 'Human', 'Safe']
 
@@ -40,7 +41,7 @@ for player in sys.argv[1:]:
 # initialize pygame
 print('Initializing pygame...')
 pygame.init()
-screen = pygame.display.set_mode((800, 600))
+screen = pygame.display.set_mode(WINDOW_SIZE)
 pygame.display.set_caption(f'Uno game - {" vs. ".join([POSSIBLE_PLAYER_TYPES[i] for i in player_types])}')
 clock = pygame.time.Clock()
 font = pygame.font.SysFont(FONT, FONT_SIZE, bold=True)
@@ -55,11 +56,6 @@ if 0 in player_types:
 
 print('Initializing game environment...')
 env = UnoEnvironment(len(player_types))
-
-if 1 in player_types:
-    # TODO: remove value from player_types when player is eliminated
-    # TODO: add "draw card" button
-    print('WARNING! Human player not fully implemented yet.')
 
 # init flags
 mouse_down = False
@@ -96,13 +92,22 @@ while not done:
             # human player
             card_selected = False
             if clicked:
+                # check if one of the player's cards was selected
                 mouse_pos = pygame.mouse.get_pos()
                 index = np.argwhere([rect.contains(mouse_pos + (0, 0)) for rect in card_rects])
                 if len(index) > 0:
-                    cards = [[index] * int(count) for index, count in enumerate(env.players[env.turn].cards) if count > 0]
-                    cards = np.concatenate(cards)
-                    action = cards[index[0,0]]
+                    if index[0,0] == np.sum(env.players[env.turn].cards):
+                        # draw from stack selected
+                        action = len(UnoEnvironment.CARD_TYPES)
+                    else:
+                        # one of the player's cards was clicked
+                        cards = [[index] * int(count) for index, count in enumerate(env.players[env.turn].cards) if count > 0]
+                        cards = np.concatenate(cards)
+                        # get the selected card index
+                        action = cards[index[0,0]]
+
                     if env.legal_move(action):
+                        # set selected to true if the selected action is legal
                         card_selected = True
             if not card_selected:
                 # no card was selected
