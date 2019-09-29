@@ -42,18 +42,26 @@ def draw_card(pos, card, surface, font):
 
 def draw_player(cards, has_turn, offset, surface, font):
     if has_turn:
+        # current player has the turn
         x = offset[0] - CARD_WIDTH / 2 - X_MARGIN
         y = offset[1] - (CARD_HEIGHT + Y_MARGIN) / 2
         width = np.sum(cards) * (CARD_WIDTH + X_MARGIN) + X_MARGIN
         height = CARD_HEIGHT + Y_MARGIN
+        # draw box behind the cards to indicate this player's turn
         surface.fill((255, 255, 255), (x, y, width, height))
 
     player_rects = []
     x, y = offset
+    # go through all card types of which the player has more than zero
     for card_index in np.argwhere(cards > 0)[:,0]:
-        draw_card((x, y), card_index, surface, font)
-        player_rects.append(pygame.rect.Rect((x - CARD_WIDTH / 2, y - CARD_HEIGHT / 2, CARD_WIDTH, CARD_HEIGHT)))
-        x += CARD_WIDTH + X_MARGIN
+        # repeat drawing the card as many times as the player has the card
+        for _ in range(cards[card_index].astype(int)):
+            # draw the current card
+            draw_card((x, y), card_index, surface, font)
+            # add this card's bounds to the card rects list
+            player_rects.append(pygame.rect.Rect((x - CARD_WIDTH / 2, y - CARD_HEIGHT / 2, CARD_WIDTH, CARD_HEIGHT)))
+            # advance position
+            x += CARD_WIDTH + X_MARGIN
     return player_rects
 
 def draw_env(env, surface, font):
