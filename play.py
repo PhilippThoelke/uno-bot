@@ -89,10 +89,11 @@ while not done:
         pygame.display.flip()
 
         if player_types[env.turn] == 0:
+            # AI player
             state = env.get_state()
             action = np.argmax(model.predict(state.reshape((1, -1)))[0])
         elif player_types[env.turn] == 1:
-            # human player's turn
+            # human player
             card_selected = False
             if clicked:
                 mouse_pos = pygame.mouse.get_pos()
@@ -103,25 +104,29 @@ while not done:
                         card_selected = True
             if not card_selected:
                 # no card was selected
-                continue
+                action = None
         elif player_types[env.turn] == 2:
+            # safe player
             action = 0
+            # search for first legal move
             while not env.legal_move(action):
                 action += 1
 
-        # play the selected action
-        _, _, game_finished, player_eliminated = env.step(action)
+        if action is not None:
+            # play the selected action
+            _, _, game_finished, player_eliminated = env.step(action)
 
-        # check if the current player is out of the game
-        if player_eliminated:
-            del player_types[env.turn]
+            # check if the current player is out of the game
+            if player_eliminated:
+                del player_types[env.turn]
 
-        # update game screen once after game has finished
-        if game_finished:
-            screen.fill(BACKGROUND)
-            draw_env(env, screen, font)
-            pygame.display.flip()
+            # update game screen once after game has finished
+            if game_finished:
+                screen.fill(BACKGROUND)
+                draw_env(env, screen, font)
+                pygame.display.flip()
 
+    # limit the frame rate
     clock.tick(2)
 
 pygame.quit()
