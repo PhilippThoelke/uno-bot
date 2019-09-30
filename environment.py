@@ -9,7 +9,9 @@ class UnoEnvironment:
     PLAYER_FINISHED_REWARD = 10
 
     # generate all possible cards as tuples with the structure (colour:int, type:int)
-    CARD_TYPES = np.array([[colour, type] for colour in range(4) for type in range(13)])
+    CARD_TYPES = [[colour, type] for colour in range(4) for type in range(13)]
+    CARD_TYPES += [[None, 13], [None, 14]]
+    CARD_TYPES = np.array(CARD_TYPES)
 
     def __init__(self, player_count):
         self.player_count = player_count
@@ -21,6 +23,8 @@ class UnoEnvironment:
 
         # initialize card stack
         self.top_card = self.CARD_TYPES[np.random.randint(len(self.CARD_TYPES))]
+        if self.top_card[0] is None:
+            self.top_card[0] = np.random.randint(0, 4)
         self.to_draw = 0
 
         # initialize turns
@@ -50,6 +54,10 @@ class UnoEnvironment:
                     # player adds 2+ card to existing
                     self.to_draw += 2
                     player_status = 1
+                elif self.top_card[1] == 14 and played_card[1] == 14:
+                    # player adds 4+ card to existing
+                    self.to_draw += 4
+                    player_status = 1
             elif played_card is None:
                 # draw one card
                 player.draw_cards(1)
@@ -61,6 +69,15 @@ class UnoEnvironment:
             elif played_card[1] == 12:
                 # skip turn card
                 self._next_turn()
+                player_status = 1
+            elif played_card[1] == 13:
+                # wishing card
+                played_card[0] = np.random.randint(0, 4)
+                player_status = 1
+            elif played_card[1] == 14:
+                # 4+ card
+                self.to_draw = 4
+                played_card[0] = np.random.randint(0, 4)
                 player_status = 1
             else:
                 # play ordinary (0-9) card
@@ -130,6 +147,12 @@ class UnoEnvironment:
         # check if player has to draw cards after 2+ or also plays 2+
         if self.to_draw > 0 and self.top_card[1] == 11 and card[1] != 11:
             return False
+        # check if player has to draw cards after 4+ or also plays 4+
+        if self.to_draw > 0 and self.top_card[1] == 14 and card[1] != 14:
+            return False
+        # if conditions so far were fulfilled it is always legal to play wishing or 4+ cards
+        if card[1] == 13 or card[1] == 14:
+            return True
 
         # return true if the last and current card's colour or type are equal
         return self.top_card[0] == card[0] or self.top_card[1] == card[1]

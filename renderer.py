@@ -16,11 +16,16 @@ Y_MARGIN = 10
 def draw_card(pos, card, surface, font):
     # get card colour and type
     if type(card) == str:
-        colour, card_type = 4, -1
+        colour_index, card_type = 4, -1
     elif hasattr(card, '__iter__'):
-        colour, card_type = card
+        colour_index, card_type = card
     else:
-        colour, card_type = UnoEnvironment.CARD_TYPES[card]
+        colour_index, card_type = UnoEnvironment.CARD_TYPES[card]
+
+    # get card colour tuple
+    colour = CARD_COLOURS[4]
+    if colour_index is not None:
+        colour = CARD_COLOURS[colour_index]
 
     # get string for the card text
     if card_type == -1:
@@ -30,18 +35,24 @@ def draw_card(pos, card, surface, font):
         # regular number
         card_text = str(card_type)
     elif card_type == 10:
-        # change direction
+        # invert direction
         card_text = '<-'
     elif card_type == 11:
-        # draw two cards
+        # 2+ card
         card_text = '2+'
     elif card_type == 12:
         # skip turn
         card_text = 'X'
+    elif card_type == 13:
+        # wishing card
+        card_text = '?'
+    elif card_type == 14:
+        # 4+ card
+        card_text = '4+'
 
     # draw card rectangle
     bounds = (pos[0] - CARD_WIDTH // 2, pos[1] - CARD_HEIGHT // 2, CARD_WIDTH, CARD_HEIGHT)
-    surface.fill(CARD_COLOURS[colour], bounds)
+    surface.fill(colour, bounds)
 
     # draw card text
     text = font.render(card_text, True, (0, 0, 0))
