@@ -1,17 +1,22 @@
 import sys
+import time
 import pygame
 import numpy as np
 from environment import UnoEnvironment
-from renderer import draw_card, draw_player, draw_env
+from renderer import *
 
-MODEL_PATH = 'example_model.h5'
+#MODEL_PATH = 'example_model.h5'
+MODEL_PATH = 'models/30-09-19_22-53-49/model-33000.h5'
 
 FONT = 'arial'
-FONT_SIZE = 25
+FONT_SIZE_LARGE = 25
+FONT_SIZE_SMALL = 18
+GAME_MESSAGE_DURATION = 3
 
-WINDOW_SIZE = (800, 600)
+WINDOW_SIZE = (1200, 600)
 BACKGROUND = (180, 180, 180)
-POSSIBLE_PLAYER_TYPES = ['AI', 'Human', 'Safe']
+POSSIBLE_PLAYER_TYPES = ['AI', 'Human', 'Naive']
+MOVE_TIME = 0.5
 
 # check command line arguments
 if len(sys.argv) < 3:
@@ -22,12 +27,14 @@ if len(sys.argv) < 3:
 
 # extract player types (0 for AI, 1 for human)
 player_types = []
+player_names = []
 for player in sys.argv[1:]:
     found = False
     # find player type and add to list
     for i, possible in enumerate(POSSIBLE_PLAYER_TYPES):
         if player.lower() == possible.lower():
             player_types.append(i)
+            player_names.append(f'{possible}-{np.sum([i == curr for curr in player_types])}')
             found = True
             break
 
@@ -43,8 +50,10 @@ pygame.init()
 screen = pygame.display.set_mode(WINDOW_SIZE)
 pygame.display.set_caption(f'Uno game - {" vs. ".join([POSSIBLE_PLAYER_TYPES[i] for i in player_types])}')
 clock = pygame.time.Clock()
-font = pygame.font.SysFont(FONT, FONT_SIZE, bold=True)
+font_large = pygame.font.SysFont(FONT, FONT_SIZE_LARGE, bold=True)
+font_small = pygame.font.SysFont(FONT, FONT_SIZE_SMALL)
 
+# check if AI player is present
 if 0 in player_types:
     if MODEL_PATH is not None:
         print('Loading model...')
@@ -53,6 +62,10 @@ if 0 in player_types:
     else:
         print('Please specify a model path.')
         exit()
+
+# initialize game variables
+game_messages = []
+last_move = time.time()
 
 print('Initializing game environment...')
 env = UnoEnvironment(len(player_types))
@@ -66,7 +79,7 @@ game_finished = False
 print('Done! Running game loop...')
 while not done:
     clicked = False
-    # check events
+    # event handling
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             done = True
@@ -81,13 +94,20 @@ while not done:
     if not game_finished:
         # reset screen
         screen.fill(BACKGROUND)
-        card_rects = draw_env(env, screen, font)
+        # render objects
+        card_rects = draw_env(env, screen, font_large, player_names, player_types)
+        draw_messages(game_messages, screen, font_small)
         pygame.display.flip()
 
+        # game logic
         if player_types[env.turn] == 0:
-            # AI player
-            state = env.get_state()
-            action = np.argmax(model.predict(state.reshape((1, -1)))[0])
+            if time.time() - last_move < MOVE_TIME:
+                # wait until move delay is reached
+                action = None
+            else:
+                # AI player
+                state = env.get_state()
+                action = np.argmax(model.predict(state.reshape((1, -1)))[0])
         elif player_types[env.turn] == 1:
             # human player
             card_selected = False
@@ -109,15 +129,21 @@ while not done:
                     if env.legal_move(action):
                         # set selected to true if the selected action is legal
                         card_selected = True
+                    else:
+                        game_messages.append((time.time(), 'Illegal move!'))
             if not card_selected:
                 # no card was selected
                 action = None
         elif player_types[env.turn] == 2:
-            # safe player
-            action = 0
-            # search for first legal move
-            while not env.legal_move(action):
-                action += 1
+            if time.time() - last_move < MOVE_TIME:
+                # wait until move delay is reached
+                action = None
+            else:
+                # naive player
+                action = 0
+                # search for first legal move
+                while not env.legal_move(action):
+                    action += 1
 
         if action is not None:
             # play the selected action
@@ -139,10 +165,14 @@ while not done:
             # update game screen once after game has finished
             if game_finished:
                 screen.fill(BACKGROUND)
-                draw_env(env, screen, font)
+                draw_env(env, screen, font_large, player_names, player_types)
+                draw_messages(game_messages, screen, font_small)
                 pygame.display.flip()
 
+    # remove game messages older than GAME_MESSAGE_DURATION
+    game_messages = [msg for msg in game_messages if time.time() - msg[0] < GAME_MESSAGE_DURATION]
+
     # limit the frame rate
-    clock.tick(2)
+    clock.tick(30)
 
 pygame.quit()
