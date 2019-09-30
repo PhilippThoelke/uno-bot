@@ -33,11 +33,14 @@ class UnoEnvironment:
 
     def step(self, action):
         reward = 0
+        turn_index = self.turn
+
         # -1: illegal move, 0: draw card, 1: play card, 2: win
         player_status = None
 
         # retrieve current player instance
         player = self.players[self.turn]
+
         # get card selected by player (None => draw card)
         played_card = None
         if action < len(self.CARD_TYPES):
@@ -97,7 +100,7 @@ class UnoEnvironment:
             reward += self.DRAW_CARD_REWARD
         elif player_status == 1:
             reward += self.CARD_PLAYED_REWARD
-            player.play_card(action)
+            player.play_card(action, played_card[0])
 
         if player.num_cards() == 0:
             # player has no cards left -> win
@@ -114,7 +117,7 @@ class UnoEnvironment:
         # check if the end of the episode was reached (only one player left)
         done = len(self.players) <= 1
 
-        return self.get_state(), reward, done, player_status
+        return self.get_state(), reward, done, {'turn': turn_index, 'player': player_status}
 
     def get_state(self):
         # generate state vector (current top card, own cards, amount to draw)

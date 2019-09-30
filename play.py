@@ -121,11 +121,20 @@ while not done:
 
         if action is not None:
             # play the selected action
-            _, _, game_finished, player_status = env.step(action)
+            _, _, game_finished, step_info = env.step(action)
+            last_move = time.time()
+
+            turn = step_info['turn']
+            player_status = step_info['player']
 
             # check if the current player is out of the game
             if player_status == -1 or player_status == 2:
-                del player_types[env.turn]
+                if player_status == -1:
+                    game_messages.append((time.time(), f'{player_names[turn]} eliminated due to illegal move.'))
+                elif player_status == 2:
+                    game_messages.append((time.time(), f'{player_names[turn]} has finished!'))
+                del player_types[turn]
+                del player_names[turn]
 
             # update game screen once after game has finished
             if game_finished:
