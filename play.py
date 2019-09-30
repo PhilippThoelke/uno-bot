@@ -5,7 +5,7 @@ from keras.models import load_model
 from environment import UnoEnvironment
 from renderer import draw_card, draw_player, draw_env
 
-MODEL_PATH = 'models/25-09-19_00-57-11/model-91000.h5'
+MODEL_PATH = 'example_model.h5'
 
 FONT = 'arial'
 FONT_SIZE = 25
