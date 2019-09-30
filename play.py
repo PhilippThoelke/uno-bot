@@ -1,7 +1,6 @@
 import sys
 import pygame
 import numpy as np
-from keras.models import load_model
 from environment import UnoEnvironment
 from renderer import draw_card, draw_player, draw_env
 
@@ -49,6 +48,7 @@ font = pygame.font.SysFont(FONT, FONT_SIZE, bold=True)
 if 0 in player_types:
     if MODEL_PATH is not None:
         print('Loading model...')
+        from keras.models import load_model
         model = load_model(MODEL_PATH)
     else:
         print('Please specify a model path.')
