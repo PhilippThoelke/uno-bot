@@ -6,12 +6,13 @@ from environment import UnoEnvironment
 
 PLAYER_COUNT = 4
 COLLECTOR_THREADS = 2
+INITIAL_EPSILON = 1
 EPSILON_DECAY = 0.999999
 MIN_EPSILON = 0.01
 
 def run(agent):
     # initialize environment
-    epsilon = 1
+    epsilon = INITIAL_EPSILON
     env = UnoEnvironment(PLAYER_COUNT)
 
     counter = 0
@@ -22,7 +23,7 @@ def run(agent):
         rewards = []
         # run one episode
         while not done:
-            if state is None or np.random.sample() < epsilon:
+            if state is None or np.random.sample() < epsilon or not agent.initialized:
                 # choose a random action
                 action = np.random.randint(env.action_count())
             else:
