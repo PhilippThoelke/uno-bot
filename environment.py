@@ -6,7 +6,7 @@ class UnoEnvironment:
     ILLEGAL_MOVE_REWARD = -2
     DRAW_CARD_REWARD = -1
     CARD_PLAYED_REWARD = 2
-    PLAYER_FINISHED_REWARD = 10
+    PLAYER_FINISHED_REWARD = 5
 
     # generate all possible cards as tuples with the structure (colour:int, type:int)
     CARD_TYPES = [[colour, type] for colour in range(4) for type in range(13)]
@@ -62,6 +62,10 @@ class UnoEnvironment:
                 # draw one card
                 player.draw_cards(1)
                 player_status = 0
+            elif played_card[1] == 10:
+                # reverse direction card
+                self.turn_direction *= -1
+                player_status = 1
             elif played_card[1] == 11:
                 # 2+ card
                 self.to_draw = 2
