@@ -14,15 +14,22 @@ class UnoAgent:
     MODEL_UPDATE_FREQUENCY = 20
     MODEL_SAVE_FREQUENCY = 1000
 
-    def __init__(self, state_size, action_count):
+    def __init__(self, state_size, action_count, model_path=None):
         print('Initializing agent...')
         self.initialized = False
         self.logger = TensorflowLogger('logs')
 
-        # initialize the prediction model and a clone of it, the target model
-        self.model = self.create_model(state_size, action_count)
-        self.target_model = self.create_model(state_size, action_count)
-        self.target_model.set_weights(self.model.get_weights())
+        if model_path is None:
+            print('Creating model...')
+            # initialize the prediction model and a clone of it, the target model
+            self.model = self.create_model(state_size, action_count)
+            self.target_model = self.create_model(state_size, action_count)
+            self.target_model.set_weights(self.model.get_weights())
+        else:
+            print('Loading model to continue the training process...')
+            # load existing model to continue training
+            self.model = models.load_model(model_path)
+            self.target_model = models.load_model(model_path)
 
         # initialize the replay memory
         self.replay_memory = collections.deque(maxlen=self.REPLAY_MEMORY_SIZE)

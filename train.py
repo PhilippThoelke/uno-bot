@@ -1,4 +1,4 @@
-import time
+import sys
 import threading
 import numpy as np
 from agent import UnoAgent
@@ -6,7 +6,7 @@ from environment import UnoEnvironment
 
 PLAYER_COUNT = 4
 COLLECTOR_THREADS = 2
-EPSILON_DECAY = 0.999995
+EPSILON_DECAY = 0.999999
 MIN_EPSILON = 0.01
 
 def run(agent):
@@ -52,9 +52,13 @@ def run(agent):
         env.reset()
 
 if __name__ == '__main__':
+    model_path = None
+    if len(sys.argv) > 1:
+        model_path = sys.argv[1]
+
     # initialize the training agent
     dummy_env = UnoEnvironment(1)
-    agent = UnoAgent(dummy_env.state_size(), dummy_env.action_count())
+    agent = UnoAgent(dummy_env.state_size(), dummy_env.action_count(), model_path)
     del dummy_env
 
     # start up threads for experience collection
