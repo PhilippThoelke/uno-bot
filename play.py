@@ -121,10 +121,10 @@ while not done:
 
         if action is not None:
             # play the selected action
-            _, _, game_finished, player_eliminated = env.step(action)
+            _, _, game_finished, player_status = env.step(action)
 
             # check if the current player is out of the game
-            if player_eliminated:
+            if player_status == -1 or player_status == 2:
                 del player_types[env.turn]
 
             # update game screen once after game has finished

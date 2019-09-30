@@ -3,6 +3,11 @@ import numpy as np
 
 class UnoEnvironment:
 
+    ILLEGAL_MOVE_REWARD = -2
+    DRAW_CARD_REWARD = -1
+    CARD_PLAYED_REWARD = 2
+    PLAYER_FINISHED_REWARD = 10
+
     # generate all possible cards as tuples with the structure (colour:int, type:int)
     CARD_TYPES = np.array([[colour, type] for colour in range(4) for type in range(13)])
 
@@ -24,67 +29,71 @@ class UnoEnvironment:
 
     def step(self, action):
         reward = 0
+        # -1: illegal move, 0: draw card, 1: play card, 2: win
+        player_status = None
 
         # retrieve current player instance
         player = self.players[self.turn]
-        eliminated = False
-        move_finished = False
+        # get card selected by player (None => draw card)
+        played_card = None
+        if action < len(self.CARD_TYPES):
+            played_card = self.CARD_TYPES[action].copy()
 
-        if self.top_card[1] == 11 and self.to_draw > 0:
-            if action == len(self.CARD_TYPES):
-                # player has to draw cards due to 2+ card (player is not countering)
-                player.draw_cards(self.to_draw)
-                self.to_draw = 0
-                move_finished = True
-            elif self.CARD_TYPES[action][1] != 11:
-                # player has to draw cards, is not playing another 2+ and did not select draw from stack -> illegal move, eliminate player
-                reward -= 1
-                self.remove_player(player)
-                eliminated = True
-                move_finished = True
-
-        if not move_finished:
-            if action == len(self.CARD_TYPES):
-                # draw card action
+        if self.legal_move(action):
+            if self.to_draw > 0:
+                if played_card is None:
+                    # player draw cards from previous 2+ or 4+ card(s)
+                    player.draw_cards(self.to_draw)
+                    self.to_draw = 0
+                    player_status = 0
+                elif self.top_card[1] == 11 and played_card[1] == 11:
+                    # player adds 2+ card to existing
+                    self.to_draw += 2
+                    player_status = 1
+            elif played_card is None:
+                # draw one card
                 player.draw_cards(1)
-                reward -= 1
+                player_status = 0
+            elif played_card[1] == 11:
+                # 2+ card
+                self.to_draw = 2
+                player_status = 1
+            elif played_card[1] == 12:
+                # skip turn card
+                self._next_turn()
+                player_status = 1
             else:
-                # try to play the selected card
-                card = player.play_card(action)
+                # play ordinary (0-9) card
+                player_status = 1
+        else:
+            # illegal move, player eliminated
+            player_status = -1
 
-                if card is not False:
-                    # legal move played
-                    reward += 2
-                    self.top_card = card
-
-                    if card[1] == 10:
-                        # reverse direction card played
-                        self.turn_direction *= -1
-                    elif card[1] == 11:
-                        # 2+ card played
-                        self.to_draw += 2
-                    elif card[1] == 12:
-                        # skip turn card played
-                        self.next_turn()
-                else:
-                    # illegal move, eliminate player
-                    reward -= 1
-                    self.remove_player(player)
-                    eliminated = True
-            move_finished = True
+        if player_status == -1:
+            reward += self.ILLEGAL_MOVE_REWARD
+            self._remove_player(player)
+        elif player_status == 0:
+            reward += self.DRAW_CARD_REWARD
+        elif player_status == 1:
+            reward += self.CARD_PLAYED_REWARD
+            player.play_card(action)
 
         if player.num_cards() == 0:
             # player has no cards left -> win
-            reward += 10
-            self.remove_player(player)
-            eliminated = True
+            player_status = 2
+            reward += self.PLAYER_FINISHED_REWARD
+            self._remove_player(player)
+
+        if played_card is not None:
+            # update top card with the card played by the player
+            self.top_card = played_card
 
         # advance to the next turn
-        self.next_turn()
+        self._next_turn()
         # check if the end of the episode was reached (only one player left)
         done = len(self.players) <= 1
 
-        return self.get_state(), reward, done, eliminated
+        return self.get_state(), reward, done, player_status
 
     def get_state(self):
         # generate state vector (current top card, own cards, amount to draw)
@@ -93,7 +102,7 @@ class UnoEnvironment:
                   [self.to_draw]]
         return np.concatenate(states)
 
-    def next_turn(self):
+    def _next_turn(self):
         # advance to the next turn
         self.turn += self.turn_direction
 
@@ -103,24 +112,29 @@ class UnoEnvironment:
         elif self.turn >= len(self.players):
             self.turn = 0
 
-    def legal_move(self, action):
+    def legal_move(self, action, player=None):
+        if player is None:
+            # get player that currently has the turn
+            player = self.players[self.turn]
+
         # drawing a card is always legal
         if action == len(self.CARD_TYPES):
             return True
 
-        # illegal move if the current player does not have the selected card
-        if self.players[self.turn].cards[action] == 0:
-            return False
-
+        # retrieve selected card information
         card = self.CARD_TYPES[action]
-        # check if player has to draw cards but wants to play another card
-        if self.top_card[1] == 11 and self.to_draw > 0 and card[1] != 11:
+
+        # illegal move if the current player does not have the selected card
+        if player.cards[action] == 0:
+            return False
+        # check if player has to draw cards after 2+ or also plays 2+
+        if self.to_draw > 0 and self.top_card[1] == 11 and card[1] != 11:
             return False
 
         # return true if the last and current card's colour or type are equal
         return self.top_card[0] == card[0] or self.top_card[1] == card[1]
 
-    def remove_player(self, player):
+    def _remove_player(self, player):
         self.players.remove(player)
         if self.turn_direction == 1:
             self.turn -= 1
@@ -151,7 +165,7 @@ class UnoPlayer:
 
     def play_card(self, card_index):
         # check if this move is legal
-        if not self.game.legal_move(card_index):
+        if not self.game.legal_move(card_index, player=self):
             return False
 
         # play the selected card
@@ -162,4 +176,4 @@ class UnoPlayer:
         return int(sum(self.cards))
 
     def __repr__(self):
-        return f'UnoPlayer ({self.num_cards()})'
+        return f'UnoPlayer({self.num_cards()})'
