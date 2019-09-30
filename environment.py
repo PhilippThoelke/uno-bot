@@ -190,14 +190,19 @@ class UnoPlayer:
         for _ in range(count):
             self.cards[np.random.randint(len(self.game.CARD_TYPES))] += 1
 
-    def play_card(self, card_index):
+    def play_card(self, card_index, colour=None):
         # check if this move is legal
         if not self.game.legal_move(card_index, player=self):
             return False
 
         # play the selected card
         self.cards[card_index] -= 1
-        return self.game.CARD_TYPES[card_index]
+
+        # set the colour of the played card if the colour was provided (for wishing and 4+ cards)
+        card = self.game.CARD_TYPES[card_index].copy()
+        if colour is not None:
+            card[0] = colour
+        return card
 
     def num_cards(self):
         return int(sum(self.cards))
