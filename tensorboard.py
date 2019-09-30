@@ -4,7 +4,7 @@ from datetime import datetime
 class TensorflowLogger:
     def __init__(self, log_dir):
         # initialize the logger
-        self.timestamp = datetime.now().strftime('%d-%m-%y_%H-%M-%S')
+        self.timestamp = datetime.now().strftime('%y-%m-%d_%H-%M-%S')
         self.writer = tf.summary.FileWriter(log_dir + '/summary_' + self.timestamp)
         self.variable_steps = {}
 
