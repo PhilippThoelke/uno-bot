@@ -3,10 +3,10 @@ import numpy as np
 
 class UnoEnvironment:
 
-    ILLEGAL_MOVE_REWARD = -2
+    ILLEGAL_MOVE_REWARD = -1
     DRAW_CARD_REWARD = -1
     CARD_PLAYED_REWARD = 2
-    PLAYER_FINISHED_REWARD = 5
+    PLAYER_FINISHED_REWARD = 10
 
     # generate all possible cards as tuples with the structure (colour:int, type:int)
     CARD_TYPES = [[colour, type] for colour in range(4) for type in range(13)]
@@ -19,7 +19,7 @@ class UnoEnvironment:
 
     def reset(self):
         # initialize players
-        self.players = [UnoPlayer(self) for _ in range(self.player_count)]
+        self.players = [UnoPlayer(self, num_cards=4) for _ in range(self.player_count)]
 
         # initialize card stack
         self.top_card = self.CARD_TYPES[np.random.randint(len(self.CARD_TYPES))]

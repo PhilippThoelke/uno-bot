@@ -10,7 +10,7 @@ class UnoAgent:
 
     REPLAY_MEMORY_SIZE = 10000
     BATCH_SIZE = 512
-    DISCOUNT_FACTOR = 0.5
+    DISCOUNT_FACTOR = 0.7
     MODEL_UPDATE_FREQUENCY = 20
     MODEL_SAVE_FREQUENCY = 1000
 
@@ -37,9 +37,8 @@ class UnoAgent:
     def create_model(self, input_size, output_size):
         # define the model architecture
         model = models.Sequential()
-        model.add(layers.Dense(units=128, activation='relu', input_shape=(input_size,)))
+        model.add(layers.Dense(units=64, activation='relu', input_shape=(input_size,)))
         model.add(layers.Dense(units=64, activation='relu'))
-        model.add(layers.Dense(units=32, activation='relu'))
         model.add(layers.Dense(units=64, activation='relu'))
         model.add(layers.Dense(units=output_size, activation='linear'))
 
