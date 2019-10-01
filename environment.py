@@ -193,7 +193,7 @@ class UnoEnvironment:
             self.turn -= 1
 
     def state_size(self):
-        return len(self.CARD_TYPES) * 2 + 1
+        return len(self.get_state())
 
     def action_count(self):
         return len(self.CARD_TYPES) + 1
