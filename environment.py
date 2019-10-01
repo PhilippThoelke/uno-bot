@@ -8,8 +8,10 @@ class UnoEnvironment:
     CARD_PLAYED_REWARD = 2
     PLAYER_FINISHED_REWARD = 10
 
+    NUM_COLOURS = 4
+
     # generate all possible cards as tuples with the structure (colour:int, type:int)
-    CARD_TYPES = [[colour, type] for colour in range(4) for type in range(13)]
+    CARD_TYPES = [[colour, type] for colour in range(NUM_COLOURS) for type in range(13)]
     CARD_TYPES += [[None, 13], [None, 14]]
     CARD_TYPES = np.array(CARD_TYPES)
 
@@ -19,7 +21,7 @@ class UnoEnvironment:
 
     def reset(self):
         # initialize players
-        self.players = [UnoPlayer(self, num_cards=4) for _ in range(self.player_count)]
+        self.players = [UnoPlayer(self, num_cards=7) for _ in range(self.player_count)]
 
         # initialize card stack
         self.top_card = self.CARD_TYPES[np.random.randint(len(self.CARD_TYPES))]
@@ -79,12 +81,12 @@ class UnoEnvironment:
                 player_status = 1
             elif played_card[1] == 13:
                 # wishing card
-                played_card[0] = np.random.randint(0, 4)
+                played_card[0] = np.random.randint(self.NUM_COLOURS)
                 player_status = 1
             elif played_card[1] == 14:
                 # 4+ card
                 self.to_draw = 4
-                played_card[0] = np.random.randint(0, 4)
+                played_card[0] = np.random.randint(self.NUM_COLOURS)
                 player_status = 1
             else:
                 # play ordinary (0-9) card
@@ -120,10 +122,31 @@ class UnoEnvironment:
         return self.get_state(), reward, done, {'turn': turn_index, 'player': player_status}
 
     def get_state(self):
+        # all cards excluding wild card and 4+ card
+        coloured_cards = np.all(self.CARD_TYPES[:-2] == self.top_card, axis=1).astype(np.float)
+
+        # one hot vector indicating colour of wild card on top of the stack
+        wild_card = np.zeros(self.NUM_COLOURS)
+        if self.top_card[1] == 13:
+            wild_card[self.top_card[0]] = 1
+
+        # one hot vector indicating colour of 4+ card on top of the stack
+        draw_4_card = np.zeros(self.NUM_COLOURS)
+        if self.top_card[1] == 14:
+            draw_4_card[self.top_card[0]] = 1
+
+        # player cards
+        player_cards = self.players[self.turn].cards
+
+        # how many cards the next player has to draw (due to 2+ or 4+ cards)
+        to_draw_info = [self.to_draw]
+
         # generate state vector (current top card, own cards, amount to draw)
-        states = [np.all(self.CARD_TYPES == self.top_card, axis=1).astype(np.float),
-                  self.players[self.turn].cards,
-                  [self.to_draw]]
+        states = [coloured_cards,
+                  wild_card,
+                  draw_4_card,
+                  player_cards,
+                  to_draw_info]
         return np.concatenate(states)
 
     def _next_turn(self):
