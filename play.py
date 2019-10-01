@@ -108,6 +108,12 @@ while not done:
                 # AI player
                 state = env.get_state()
                 action = np.argmax(model.predict(state.reshape((1, -1)))[0])
+
+                # make random move if the AI selected an illegal move
+                if not env.legal_move(action):
+                    game_messages.append((time.time(), f'{player_names[env.turn]} selected an illegal action, play random card.'))
+                    while not env.legal_move(action):
+                        action = np.random.randint(env.action_count())
         elif player_types[env.turn] == 1:
             # human player
             card_selected = False
