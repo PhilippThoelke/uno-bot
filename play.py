@@ -5,8 +5,7 @@ import numpy as np
 from environment import UnoEnvironment
 from renderer import *
 
-#MODEL_PATH = 'example_model.h5'
-MODEL_PATH = 'models/30-09-19_22-53-49/model-33000.h5'
+MODEL_PATH = 'example_model.h5'
 
 FONT = 'arial'
 FONT_SIZE_LARGE = 25
