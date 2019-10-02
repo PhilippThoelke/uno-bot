@@ -3,7 +3,7 @@ import numpy as np
 
 class UnoEnvironment:
 
-    ILLEGAL_MOVE_REWARD = -1
+    ILLEGAL_MOVE_REWARD = -2
     DRAW_CARD_REWARD = -1
     CARD_PLAYED_REWARD = 2
     PLAYER_FINISHED_REWARD = 10
@@ -80,7 +80,7 @@ class UnoEnvironment:
                 self._next_turn()
                 player_status = 1
             elif played_card[1] == 13:
-                # wishing card
+                # wild card
                 played_card[0] = np.random.randint(self.NUM_COLOURS)
                 player_status = 1
             elif played_card[1] == 14:
@@ -180,7 +180,7 @@ class UnoEnvironment:
         # check if player has to draw cards after 4+ or also plays 4+
         if self.to_draw > 0 and self.top_card[1] == 14 and card[1] != 14:
             return False
-        # if conditions so far were fulfilled it is always legal to play wishing or 4+ cards
+        # if conditions so far were fulfilled it is always legal to play wild or 4+ cards
         if card[1] == 13 or card[1] == 14:
             return True
 
@@ -224,7 +224,7 @@ class UnoPlayer:
         # play the selected card
         self.cards[card_index] -= 1
 
-        # set the colour of the played card if the colour was provided (for wishing and 4+ cards)
+        # set the colour of the played card if the colour was provided (for wild and 4+ cards)
         card = self.game.CARD_TYPES[card_index].copy()
         if colour is not None:
             card[0] = colour
