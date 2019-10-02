@@ -16,7 +16,7 @@ CARD_HIGHLIGHT_BORDER = 3
 NAME_WIDTH = 150
 
 
-def draw_card(pos, card, surface, font, highlightable=False):
+def draw_card(pos, card, surface, font, highlightable=False, backside=False):
     # get card colour and type
     if type(card) == str:
         colour_index, card_type = 4, -1
@@ -47,7 +47,7 @@ def draw_card(pos, card, surface, font, highlightable=False):
         # skip turn
         card_text = 'X'
     elif card_type == 13:
-        # wishing card
+        # wild card
         card_text = '?'
     elif card_type == 14:
         # 4+ card
@@ -61,15 +61,19 @@ def draw_card(pos, card, surface, font, highlightable=False):
         rect.y += CARD_HIGHLIGHT_BORDER
         rect.width -= CARD_HIGHLIGHT_BORDER * 2
         rect.height -= CARD_HIGHLIGHT_BORDER * 2
+
+    if backside:
+        colour = CARD_COLOURS[-1]
     surface.fill(colour, rect)
 
-    # draw card text
-    text = font.render(card_text, True, (0, 0, 0))
-    text_rect = text.get_rect()
-    text_rect.center = pos
-    surface.blit(text, text_rect)
+    if not backside:
+        # draw card text
+        text = font.render(card_text, True, (0, 0, 0))
+        text_rect = text.get_rect()
+        text_rect.center = pos
+        surface.blit(text, text_rect)
 
-def draw_player(cards, has_turn, offset, surface, font, is_human):
+def draw_player(cards, has_turn, offset, surface, font, is_human, draw_non_human):
     if has_turn:
         # current player has the turn
         x = offset[0] - CARD_WIDTH / 2 - X_MARGIN
@@ -86,14 +90,14 @@ def draw_player(cards, has_turn, offset, surface, font, is_human):
         # repeat drawing the card as many times as the player has the card
         for _ in range(cards[card_index].astype(int)):
             # draw the current card
-            draw_card((x, y), card_index, surface, font, highlightable=has_turn and is_human)
+            draw_card((x, y), card_index, surface, font, highlightable=has_turn and is_human, backside=not draw_non_human and not is_human)
             # add this card's bounds to the card rects list
             player_rects.append(pygame.rect.Rect((x - CARD_WIDTH / 2, y - CARD_HEIGHT / 2, CARD_WIDTH, CARD_HEIGHT)))
             # advance position
             x += CARD_WIDTH + X_MARGIN
     return player_rects
 
-def draw_env(env, surface, font, names, types):
+def draw_env(env, surface, font, names, types, draw_non_human=True):
     x = CARD_WIDTH / 2 + X_MARGIN
     # draw top card
     y = surface.get_bounding_rect().center[1] - (CARD_HEIGHT + Y_MARGIN) / 2
@@ -115,7 +119,7 @@ def draw_env(env, surface, font, names, types):
         surface.blit(text, text_rect)
 
         x_offset += NAME_WIDTH
-        rects = draw_player(player.cards, i == env.turn, (x_offset, y_offset), surface, font, type == 1)
+        rects = draw_player(player.cards, i == env.turn, (x_offset, y_offset), surface, font, type == 1, draw_non_human=draw_non_human)
 
         if i == env.turn:
             # current player has the turn

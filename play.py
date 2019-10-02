@@ -7,6 +7,9 @@ from renderer import *
 
 MODEL_PATH = 'example_model.h5'
 
+MOVE_TIME = 0
+SHOW_NON_HUMAN_CARDS = False
+
 FONT = 'arial'
 FONT_SIZE_LARGE = 25
 FONT_SIZE_SMALL = 18
@@ -15,7 +18,6 @@ GAME_MESSAGE_DURATION = 3
 WINDOW_SIZE = (1200, 600)
 BACKGROUND = (180, 180, 180)
 POSSIBLE_PLAYER_TYPES = ['AI', 'Human', 'Naive']
-MOVE_TIME = 0.5
 
 # check command line arguments
 if len(sys.argv) < 3:
@@ -94,7 +96,7 @@ while not done:
         # reset screen
         screen.fill(BACKGROUND)
         # render objects
-        card_rects = draw_env(env, screen, font_large, player_names, player_types)
+        card_rects = draw_env(env, screen, font_large, player_names, player_types, draw_non_human=SHOW_NON_HUMAN_CARDS)
         draw_messages(game_messages, screen, font_small)
         pygame.display.flip()
 
@@ -170,7 +172,7 @@ while not done:
             # update game screen once after game has finished
             if game_finished:
                 screen.fill(BACKGROUND)
-                draw_env(env, screen, font_large, player_names, player_types)
+                draw_env(env, screen, font_large, player_names, player_types, draw_non_human=True)
                 draw_messages(game_messages, screen, font_small)
                 pygame.display.flip()
 
